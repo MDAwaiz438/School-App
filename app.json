@@ -6,8 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "schoolapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.anonymous.schoolapp",
       "icon": "./assets/expo.icon"
     },
     "android": {

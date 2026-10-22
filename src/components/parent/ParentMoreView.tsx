@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -13,12 +12,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { AppCard } from '@/components/common/AppCard';
 import { AppButton } from '@/components/common/AppButton';
+import { HeaderBar } from '@/components/common/HeaderBar';
 import { StatusPill } from '@/components/common/StatusPill';
 import { Palette, Radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { MOCK_FEES } from '@/data/mockData';
 
-export const ParentMoreView: React.FC = () => {
+interface ParentMoreViewProps {
+  onBack?: () => void;
+}
+
+export const ParentMoreView: React.FC<ParentMoreViewProps> = ({ onBack }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
 
@@ -30,6 +34,8 @@ export const ParentMoreView: React.FC = () => {
     submitLeaveRequest,
     attendanceCalendar,
     logout,
+    showAlert,
+    setIsChatModalVisible,
   } = useApp();
 
   const [isLeaveModalVisible, setLeaveModalVisible] = useState(false);
@@ -40,7 +46,11 @@ export const ParentMoreView: React.FC = () => {
 
   const handleApplyLeave = () => {
     if (!startDate || !reason) {
-      Alert.alert('Required Fields', 'Please specify a start date and reason for leave.');
+      showAlert({
+        title: 'Required Fields',
+        message: 'Please specify a start date and reason for leave.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -58,17 +68,28 @@ export const ParentMoreView: React.FC = () => {
     setEndDate('');
     setReason('');
     setLeaveModalVisible(false);
-    Alert.alert('Request Submitted', 'Your leave request has been forwarded to the class teacher.');
+    showAlert({
+      title: 'Request Submitted',
+      message: 'Your leave request has been forwarded to the class teacher.',
+      type: 'success',
+      icon: 'checkmark-circle',
+    });
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.contentContainer,
-        isDesktop && styles.contentContainerDesktop,
-      ]}
-      showsVerticalScrollIndicator={false}>
+    <View style={{ flex: 1, backgroundColor: Palette.background }}>
+      {/* Screen Header */}
+      <HeaderBar
+        title="More"
+        onBack={onBack}
+      />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.contentContainer,
+          isDesktop && styles.contentContainerDesktop,
+        ]}
+        showsVerticalScrollIndicator={false}>
       <View style={[styles.mainLayout, isDesktop && styles.mainLayoutDesktop]}>
         {/* COLUMN 1: PROFILE & ATTENDANCE CALENDAR */}
         <View style={[styles.column, isDesktop && styles.columnHalf]}>
@@ -252,6 +273,38 @@ export const ParentMoreView: React.FC = () => {
             ))}
           </AppCard>
 
+          {/* Direct Communication & Helpdesk */}
+          <AppCard style={styles.feeCard}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.headerTextCol}>
+                <Text style={styles.sectionTitle} numberOfLines={1}>Support & Communication</Text>
+                <Text style={styles.sectionSubtitle} numberOfLines={1}>Direct contact with faculty & admin</Text>
+              </View>
+            </View>
+
+            <View style={{ gap: 10, marginTop: 8 }}>
+              <AppButton
+                title="Open Campus & Faculty Chat"
+                variant="primary"
+                icon={<Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />}
+                onPress={() => setIsChatModalVisible(true)}
+              />
+              <AppButton
+                title="School Helpdesk & FAQs"
+                variant="outline"
+                icon={<Ionicons name="help-buoy-outline" size={18} color={Palette.primaryNavy} />}
+                onPress={() =>
+                  showAlert({
+                    title: 'Oakridge Campus Helpdesk',
+                    message: 'Official Support Desk is active 8:00 AM – 4:30 PM.\nEmail: support@oakridge.edu\nDirect Helpline: +1 (800) 555-0199',
+                    type: 'info',
+                    icon: 'headset-outline',
+                  })
+                }
+              />
+            </View>
+          </AppCard>
+
           {/* 5. Switch Student or Logout */}
           <View style={styles.actionSection}>
             {allStudents.length > 1 && (
@@ -271,10 +324,15 @@ export const ParentMoreView: React.FC = () => {
               variant="danger"
               icon={<Ionicons name="log-out-outline" size={18} color="#FFFFFF" />}
               onPress={() => {
-                Alert.alert('Sign Out', 'Are you sure you want to log out?', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Log Out', style: 'destructive', onPress: logout },
-                ]);
+                showAlert({
+                  title: 'Sign Out',
+                  message: 'Are you sure you want to log out of the parent portal?',
+                  type: 'confirm',
+                  buttons: [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Log Out', style: 'destructive', onPress: logout },
+                  ],
+                });
               }}
             />
           </View>
@@ -342,7 +400,8 @@ export const ParentMoreView: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 

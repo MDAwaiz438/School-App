@@ -1,4 +1,4 @@
-export type Role = 'parent' | 'student' | 'teacher' | 'admin';
+export type Role = 'admin' | 'teacher' | 'parent' | 'student';
 
 export interface Student {
   id: string;
@@ -40,7 +40,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'principal' | 'staff';
+  role: 'principal' | 'staff' | 'admin';
 }
 
 export interface TimetableSlot {
@@ -69,6 +69,10 @@ export interface StudentRosterItem {
   name: string;
   avatar: string;
   status: AttendanceStatus;
+  attendancePercentage?: number;
+  presentDays?: number;
+  absentDays?: number;
+  leaveDays?: number;
 }
 
 export interface LeaveRequest {
@@ -84,6 +88,7 @@ export interface LeaveRequest {
   appliedAt: string;
   approvedBy?: string;
   rejectionReason?: string;
+  appliedBy?: 'student' | 'parent' | 'teacher';
 }
 
 export interface Homework {
@@ -181,3 +186,78 @@ export interface FeeItem {
   paidDate?: string;
   invoiceNo: string;
 }
+
+export interface SchoolEvent {
+  id: string;
+  title: string;
+  category: 'academic' | 'sports' | 'cultural' | 'holiday' | 'ptm' | 'workshop';
+  date: string;
+  time: string;
+  venue: string;
+  targetAudience: ('all' | 'students' | 'parents' | 'teachers')[];
+  description: string;
+  organizer: string;
+  rsvpCount?: number;
+}
+
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'student' | 'teacher' | 'parent';
+  category: string;
+  subject: string;
+  description: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'resolved';
+  createdAt: string;
+  updatedAt: string;
+  response?: string;
+  reopenedAt?: string;
+  reopenReason?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: Role;
+  content: string;
+  timestamp: string;
+  isSelf?: boolean;
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  subtitle: string;
+  avatar?: string;
+  type: 'direct' | 'group' | 'helpdesk';
+  unreadCount: number;
+  lastMessage: string;
+  lastMessageTime: string;
+  allowedRoles: Role[];
+}
+
+export interface PopQuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface PopQuiz {
+  id: string;
+  title: string;
+  subject: string;
+  topic: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  className: string;
+  questions: PopQuizQuestion[];
+  createdAt: string;
+  createdBy: string;
+}
+

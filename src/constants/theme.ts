@@ -1,8 +1,9 @@
 import { Platform } from 'react-native';
 
 export const Palette = {
-  // Primary Visual System Tokens
+  // Primary Visual System Tokens (Exact reference palette from spec)
   primaryNavy: '#102A43',
+  navyHeader: '#102A43',
   actionBlue: '#2F80ED',
   background: '#F7F9FC',
   surface: '#FFFFFF',
@@ -15,16 +16,25 @@ export const Palette = {
   // Typography & Neutrals
   textDark: '#17202A',
   textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
+  textMuted: '#94A3B8',
   border: '#E2E8F0',
   borderSubtle: '#EDF2F7',
 
   // Soft Tint Backgrounds
-  blueTint: '#EBF3FE',
-  greenTint: '#EAF7EE',
-  orangeTint: '#FEF5EC',
-  redTint: '#FDECEC',
-  navyTint: '#E8ECF2',
+  blueTint: '#EFF6FF',
+  greenTint: '#F0FDF4',
+  orangeTint: '#FFF7ED',
+  redTint: '#FEF2F2',
+  purpleTint: '#FAF5FF',
+  yellowTint: '#FEFCE8',
+  navyTint: '#E2E8F0',
+} as const;
+
+export const Breakpoints = {
+  compact: 500,
+  phone: 600,
+  tablet: 768,
+  desktop: 900,
 } as const;
 
 export const Colors = {

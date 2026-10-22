@@ -40,12 +40,9 @@ example
 
 # generated native folders
 /ios
+/android
 
-# Ignore heavy android build caches but keep native source and release assets
-/android/.gradle
-/android/build
-/android/app/build
-/android/app/.cxx
-/android/.kotlin
-!/release/
-!/release/*.apk
+# binary archives and builds
+*.apk
+*.zip
+

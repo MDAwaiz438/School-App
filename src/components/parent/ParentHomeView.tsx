@@ -1,5 +1,7 @@
 import React from 'react';
 import {
+  Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,741 +10,832 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppCard } from '@/components/common/AppCard';
-import { StatusPill } from '@/components/common/StatusPill';
-import { Palette, Radii } from '@/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GradientSpread } from '@/components/common/GradientSpread';
+import { Palette, Breakpoints } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { MOCK_TIMETABLE } from '@/data/mockData';
 
 interface ParentHomeViewProps {
-  onNavigateTab: (tab: 'home' | 'academics' | 'updates' | 'more') => void;
-  onOpenLeaveModal: () => void;
+  onNavigateTab: (tab: 'home' | 'academics' | 'updates' | 'more' | 'attendance' | 'homework') => void;
+  onOpenLeaveModal?: () => void;
+  onNotificationPress?: () => void;
+  onProfilePress?: () => void;
 }
 
 export const ParentHomeView: React.FC<ParentHomeViewProps> = ({
   onNavigateTab,
   onOpenLeaveModal,
+  onNotificationPress,
+  onProfilePress,
 }) => {
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 900;
-  const { selectedStudent, homeworkList, toggleHomeworkStatus, announcements } = useApp();
+  const isCompact = width < Breakpoints.compact;
+  const isTablet = width >= Breakpoints.tablet;
+  const isDesktop = width >= Breakpoints.desktop;
 
-  const currentClass = MOCK_TIMETABLE.find((t) => t.isCurrent) || MOCK_TIMETABLE[0];
-  const nextClass = MOCK_TIMETABLE.find((t) => t.isNext) || MOCK_TIMETABLE[1];
-  const pendingHomework = homeworkList.filter((h) => h.status === 'pending');
-  const emergencyAnn = announcements.find((a) => a.priority === 'emergency');
+  const { selectedStudent, homeworkList, notifications, logout, showAlert, setIsChatModalVisible } = useApp();
+
+  const unreadNotifs = notifications.filter((n) => !n.read).length;
+  const pendingHw = homeworkList.filter((h) => h.status === 'pending');
+
+  const topPadding = Math.max(insets.top, 14) + 10;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.contentContainer,
-        isDesktop && styles.contentContainerDesktop,
-      ]}
-      showsVerticalScrollIndicator={false}>
-      {/* Emergency Announcement Banner (if any) */}
-      {emergencyAnn && (
-        <View style={styles.emergencyBanner}>
-          <View style={styles.emergencyHeader}>
-            <View style={styles.emergencyTag}>
-              <Ionicons name="warning" size={14} color="#FFFFFF" />
-              <Text style={styles.emergencyTagText}>URGENT NOTICE</Text>
+    <View style={{ flex: 1, backgroundColor: Palette.background }}>
+      {/* 1. APP BAR / HEADER (Matching Super Admin & Student) */}
+      <View style={styles.appHeader}>
+        <View style={styles.headerTop}>
+          <View>
+            <View style={styles.headerTag}>
+              <View style={styles.pulseDot} />
+              <Text style={styles.headerTagText}>PARENT PORTAL</Text>
             </View>
-            <Text style={styles.emergencyDate}>{emergencyAnn.date}</Text>
-          </View>
-          <Text style={styles.emergencyTitle}>{emergencyAnn.title}</Text>
-          <Text style={styles.emergencyContent}>{emergencyAnn.content}</Text>
-        </View>
-      )}
-
-      {/* Responsive Grid Container */}
-      <View style={[styles.mainLayout, isDesktop && styles.mainLayoutDesktop]}>
-        {/* COLUMN 1: PRESENCE & SCHEDULE */}
-        <View style={[styles.column, isDesktop && styles.columnHalf]}>
-          {/* Section 1: Child Status & Attendance Card */}
-          <AppCard style={styles.statusCard}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.headerTextCol}>
-                <Text style={styles.eyebrow} numberOfLines={1}>STUDENT DAILY STATUS</Text>
-                <Text style={styles.cardTitle} numberOfLines={1}>Today's Presence</Text>
-              </View>
-              <StatusPill status="present" label="Present Today" />
-            </View>
-
-            <View style={styles.attendanceRow}>
-              <View style={styles.progressCircleContainer}>
-                <View style={styles.circleGraphic}>
-                  <Text style={styles.percentageText}>{selectedStudent.attendancePercentage}%</Text>
-                  <Text style={styles.percentageLabel}>Attendance</Text>
-                </View>
-              </View>
-
-              <View style={styles.metricsCol}>
-                <View style={styles.metricItem}>
-                  <View style={[styles.metricDot, { backgroundColor: Palette.successGreen }]} />
-                  <Text style={styles.metricLabel}>Present Days</Text>
-                  <Text style={styles.metricValue}>{selectedStudent.presentDays}</Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <View style={[styles.metricDot, { backgroundColor: Palette.errorRed }]} />
-                  <Text style={styles.metricLabel}>Absent Days</Text>
-                  <Text style={styles.metricValue}>{selectedStudent.absentDays}</Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <View style={[styles.metricDot, { backgroundColor: Palette.warningOrange }]} />
-                  <Text style={styles.metricLabel}>Approved Leave</Text>
-                  <Text style={styles.metricValue}>{selectedStudent.leaveDays}</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.cardFooterActions}>
-              <TouchableOpacity
-                style={styles.cardFooterLink}
-                onPress={() => onNavigateTab('more')}>
-                <Ionicons name="calendar-outline" size={16} color={Palette.actionBlue} />
-                <Text style={styles.cardFooterLinkText}>View Attendance Calendar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.cardFooterLink, styles.leaveBtnLink]}
-                onPress={onOpenLeaveModal}>
-                <Ionicons name="document-text-outline" size={16} color={Palette.primaryNavy} />
-                <Text style={[styles.cardFooterLinkText, { color: Palette.primaryNavy }]}>
-                  Apply Leave
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </AppCard>
-
-          {/* Section 2: Today's Schedule Preview */}
-          <AppCard style={styles.scheduleCard}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.headerTextCol}>
-                <Text style={styles.sectionTitle} numberOfLines={1} ellipsizeMode="tail">
-                  Today's Schedule
-                </Text>
-                <Text style={styles.sectionSubtitle} numberOfLines={1}>
-                  Monday • 6 Periods Scheduled
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.seeAllBtn}
-                activeOpacity={0.7}
-                onPress={() => onNavigateTab('academics')}>
-                <Text style={styles.seeAllText}>Full Week</Text>
-                <Ionicons name="chevron-forward" size={12} color={Palette.actionBlue} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Current Class */}
-            <View style={styles.activeClassRow}>
-              <View style={styles.activePill}>
-                <Text style={styles.activePillText}>NOW HAPPENING</Text>
-              </View>
-              <View style={styles.classInfoRow}>
-                <View style={styles.classSubjectCol}>
-                  <Text style={styles.classSubject}>{currentClass.subject}</Text>
-                  <Text style={styles.classTeacher}>{currentClass.teacherName}</Text>
-                </View>
-                <View style={styles.classMetaCol}>
-                  <Text style={styles.classTime}>{currentClass.time}</Text>
-                  <Text style={styles.classRoom}>{currentClass.room}</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Next Class */}
-            <View style={styles.nextClassRow}>
-              <View style={styles.nextPill}>
-                <Text style={styles.nextPillText}>UP NEXT</Text>
-              </View>
-              <View style={styles.classInfoRow}>
-                <View style={styles.classSubjectCol}>
-                  <Text style={styles.classSubject}>{nextClass.subject}</Text>
-                  <Text style={styles.classTeacher}>{nextClass.teacherName}</Text>
-                </View>
-                <View style={styles.classMetaCol}>
-                  <Text style={styles.classTime}>{nextClass.time}</Text>
-                  <Text style={styles.classRoom}>{nextClass.room}</Text>
-                </View>
-              </View>
-            </View>
-          </AppCard>
-        </View>
-
-        {/* COLUMN 2: QUICK ACTIONS, HOMEWORK & UPDATES */}
-        <View style={[styles.column, isDesktop && styles.columnHalf]}>
-          {/* Quick Action Grid */}
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              style={styles.actionTile}
-              activeOpacity={0.7}
-              onPress={() => onNavigateTab('academics')}>
-              <View style={[styles.actionIconBg, { backgroundColor: Palette.blueTint }]}>
-                <Ionicons name="time" size={22} color={Palette.actionBlue} />
-              </View>
-              <Text style={styles.actionTileText}>Timetable</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionTile}
-              activeOpacity={0.7}
-              onPress={() => onNavigateTab('academics')}>
-              <View style={[styles.actionIconBg, { backgroundColor: Palette.greenTint }]}>
-                <Ionicons name="school" size={22} color={Palette.successGreen} />
-              </View>
-              <Text style={styles.actionTileText}>Report Card</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionTile}
-              activeOpacity={0.7}
-              onPress={onOpenLeaveModal}>
-              <View style={[styles.actionIconBg, { backgroundColor: Palette.orangeTint }]}>
-                <Ionicons name="calendar" size={22} color={Palette.warningOrange} />
-              </View>
-              <Text style={styles.actionTileText}>Apply Leave</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionTile}
-              activeOpacity={0.7}
-              onPress={() => onNavigateTab('more')}>
-              <View style={[styles.actionIconBg, { backgroundColor: Palette.navyTint }]}>
-                <Ionicons name="card" size={22} color={Palette.primaryNavy} />
-              </View>
-              <Text style={styles.actionTileText}>Fee Invoices</Text>
-            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Mrs. Priya Kumar</Text>
+            <Text style={styles.headerSub}>
+              {selectedStudent.name} • {selectedStudent.grade} - Section {selectedStudent.section}
+            </Text>
           </View>
 
-          {/* Pending Homework */}
-          <AppCard style={styles.homeworkCard}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.headerTextCol}>
-                <Text style={styles.sectionTitle} numberOfLines={1} ellipsizeMode="tail">
-                  Homework & Assignments
-                </Text>
-                <Text style={styles.sectionSubtitle} numberOfLines={1}>
-                  {pendingHomework.length} Pending Tasks
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.seeAllBtn}
-                activeOpacity={0.7}
-                onPress={() => onNavigateTab('academics')}>
-                <Text style={styles.seeAllText}>View All</Text>
-                <Ionicons name="chevron-forward" size={12} color={Palette.actionBlue} />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => setIsChatModalVisible(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="School Chat & Faculty Messaging"
+              style={styles.chatBtn}>
+              <Ionicons name="chatbubbles" size={18} color="#4F46E5" />
+              <View style={styles.chatBadgeDot} />
+            </TouchableOpacity>
 
-            {homeworkList.slice(0, 2).map((hw) => {
-              const isPending = hw.status === 'pending';
-              return (
-                <View key={hw.id} style={styles.homeworkItem}>
-                  <View style={styles.hwHeader}>
-                    <View style={styles.hwSubjectTag}>
-                      <Text style={styles.hwSubjectText}>{hw.subject}</Text>
-                    </View>
-                    <StatusPill
-                      status={hw.status}
-                      label={isPending ? `Due ${hw.dueDate}` : 'Completed'}
-                      size="sm"
-                    />
-                  </View>
+            <TouchableOpacity
+              onPress={onNotificationPress}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Notifications, ${unreadNotifs} unread`}
+              style={styles.notificationBtn}>
+              <Ionicons name="notifications-outline" size={20} color="#475569" />
+              {unreadNotifs > 0 && <View style={styles.badgeDot} />}
+            </TouchableOpacity>
 
-                  <Text style={styles.hwTitle}>{hw.title}</Text>
-                  <Text style={styles.hwDesc} numberOfLines={2}>
-                    {hw.description}
-                  </Text>
-
-                  <View style={styles.hwFooter}>
-                    <Text style={styles.hwTeacher}>Assigned by {hw.teacherName}</Text>
-                    <TouchableOpacity
-                      style={[styles.hwCompleteBtn, !isPending && styles.hwCompleteBtnActive]}
-                      onPress={() => toggleHomeworkStatus(hw.id)}>
-                      <Ionicons
-                        name={isPending ? 'checkmark-circle-outline' : 'checkmark-circle'}
-                        size={16}
-                        color={isPending ? Palette.actionBlue : Palette.successGreen}
-                      />
-                      <Text
-                        style={[
-                          styles.hwCompleteBtnText,
-                          !isPending && { color: Palette.successGreen },
-                        ]}>
-                        {isPending ? 'Mark Completed' : 'Completed'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-          </AppCard>
-
-          {/* School Announcements */}
-          <AppCard style={styles.announcementsCard}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.headerTextCol}>
-                <Text style={styles.sectionTitle} numberOfLines={1} ellipsizeMode="tail">
-                  School Updates
-                </Text>
-                <Text style={styles.sectionSubtitle} numberOfLines={1}>
-                  Circulars & notices
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.seeAllBtn}
-                activeOpacity={0.7}
-                onPress={() => onNavigateTab('updates')}>
-                <Text style={styles.seeAllText}>View All</Text>
-                <Ionicons name="chevron-forward" size={12} color={Palette.actionBlue} />
-              </TouchableOpacity>
-            </View>
-
-            {announcements.slice(0, 2).map((ann) => (
-              <View key={ann.id} style={styles.announcementItem}>
-                <View style={styles.annHeaderRow}>
-                  <StatusPill status={ann.priority} size="sm" />
-                  <Text style={styles.annDate}>{ann.date}</Text>
-                </View>
-                <Text style={styles.annTitle}>{ann.title}</Text>
-                <Text style={styles.annContent} numberOfLines={2}>
-                  {ann.content}
-                </Text>
-              </View>
-            ))}
-          </AppCard>
+            <TouchableOpacity
+              style={styles.profileBtn}
+              activeOpacity={0.8}
+              onPress={onProfilePress}
+              accessibilityRole="button"
+              accessibilityLabel="Switch student profile and account settings">
+              <Image
+                source={{ uri: selectedStudent.avatar }}
+                style={styles.profileAvatarImg}
+              />
+              <View style={styles.statusOnlineDot} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
+
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.contentContainer,
+          isTablet && styles.contentContainerTablet,
+        ]}
+        showsVerticalScrollIndicator={false}>
+        {/* Child Profile Card */}
+        <TouchableOpacity
+          onPress={onProfilePress}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={`Selected student ${selectedStudent.name}, ${selectedStudent.grade} ${selectedStudent.section}`}
+          style={styles.childCard}>
+          <Image
+            source={{ uri: selectedStudent.avatar }}
+            style={styles.childAvatar}
+            accessibilityRole="image"
+            accessibilityLabel={`${selectedStudent.name} avatar`}
+          />
+          <View style={styles.childInfoCol}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.childName} numberOfLines={1} ellipsizeMode="tail">
+                {selectedStudent.name}
+              </Text>
+              <View style={styles.activePill}>
+                <Text style={styles.activePillText}>Enrolled</Text>
+              </View>
+            </View>
+            <Text style={styles.childGrade} numberOfLines={1} ellipsizeMode="tail">
+              {selectedStudent.grade} • Section {selectedStudent.section} • Roll #{selectedStudent.rollNo}
+            </Text>
+          </View>
+          <View style={styles.switchChildBtn}>
+            <Ionicons name="swap-horizontal" size={14} color="#4F46E5" />
+            <Text style={styles.switchChildText}>Switch</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* 2. CENTER SQUARE SECTION HUBS (Matching Student View) */}
+        <View style={styles.centerSquareSection}>
+          <View style={styles.squareHeaderRow}>
+            <Text style={styles.squareHeaderTitle}>Core Portals</Text>
+            <Text style={styles.squareHeaderSubtitle}>Direct Navigation</Text>
+          </View>
+
+          <View style={styles.squareGrid}>
+            {/* Square 1: Academics */}
+            <TouchableOpacity
+              style={[styles.squareCard, isDesktop && styles.squareCardDesktop, styles.squareCardAcademics]}
+              activeOpacity={0.75}
+              onPress={() => onNavigateTab('academics')}>
+              <View style={styles.squareTopRow}>
+                <View style={[styles.squareIconBox, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="school" size={24} color="#2563EB" />
+                </View>
+                <View style={[styles.squareBadge, { backgroundColor: '#DBEAFE' }]}>
+                  <Text style={[styles.squareBadgeText, { color: '#1E40AF' }]}>
+                    3 Classes
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.squareBottomInfo}>
+                <Text style={styles.squareTitle}>Academics</Text>
+                <Text style={styles.squareSubtitle} numberOfLines={1}>
+                  Timetable & Report
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Square 2: Attendance */}
+            <TouchableOpacity
+              style={[styles.squareCard, isDesktop && styles.squareCardDesktop, styles.squareCardAttendance]}
+              activeOpacity={0.75}
+              onPress={() => onNavigateTab('attendance')}>
+              <View style={styles.squareTopRow}>
+                <View style={[styles.squareIconBox, { backgroundColor: '#ECFDF5' }]}>
+                  <Ionicons name="pie-chart" size={24} color="#059669" />
+                </View>
+                <View style={[styles.squareBadge, { backgroundColor: '#D1FAE5' }]}>
+                  <Text style={[styles.squareBadgeText, { color: '#047857' }]}>
+                    92%
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.squareBottomInfo}>
+                <Text style={styles.squareTitle}>Attendance</Text>
+                <Text style={styles.squareSubtitle} numberOfLines={1}>
+                  Good Standing
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Square 3: Homework */}
+            <TouchableOpacity
+              style={[styles.squareCard, isDesktop && styles.squareCardDesktop, styles.squareCardAssignments]}
+              activeOpacity={0.75}
+              onPress={() => onNavigateTab('homework')}>
+              <View style={styles.squareTopRow}>
+                <View style={[styles.squareIconBox, { backgroundColor: '#FEF3C7' }]}>
+                  <Ionicons name="document-text" size={24} color="#D97706" />
+                </View>
+                <View style={[styles.squareBadge, { backgroundColor: '#FEE2E2' }]}>
+                  <Text style={[styles.squareBadgeText, { color: '#DC2626' }]}>
+                    {pendingHw.length} Due
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.squareBottomInfo}>
+                <Text style={styles.squareTitle}>Assignments</Text>
+                <Text style={styles.squareSubtitle} numberOfLines={1}>
+                  Homework tasks
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Square 4: Announcements */}
+            <TouchableOpacity
+              style={[styles.squareCard, isDesktop && styles.squareCardDesktop, styles.squareCardUpdates]}
+              activeOpacity={0.75}
+              onPress={() => onNavigateTab('updates')}>
+              <View style={styles.squareTopRow}>
+                <View style={[styles.squareIconBox, { backgroundColor: '#FDF2F8' }]}>
+                  <Ionicons name="megaphone" size={24} color="#DB2777" />
+                </View>
+                <View style={[styles.squareBadge, { backgroundColor: '#FCE7F3' }]}>
+                  <Text style={[styles.squareBadgeText, { color: '#BE185D' }]}>
+                    1 New
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.squareBottomInfo}>
+                <Text style={styles.squareTitle}>Announcements</Text>
+                <Text style={styles.squareSubtitle} numberOfLines={1}>
+                  Circulars & alerts
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+      {/* 3. TODAY'S SCHEDULE SECTION */}
+      <View style={styles.sectionWrapper}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's Schedule</Text>
+          <TouchableOpacity
+            onPress={() => onNavigateTab('academics')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="View full schedule">
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.scheduleList}>
+          {MOCK_TIMETABLE.map((slot) => {
+            return (
+              <TouchableOpacity
+                key={slot.id}
+                onPress={() => onNavigateTab('academics')}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`${slot.time}, ${slot.subject}, ${slot.room}`}
+                style={styles.scheduleCard}>
+                <Text style={styles.scheduleTime} numberOfLines={1}>
+                  {slot.time}
+                </Text>
+                <View
+                  style={[
+                    styles.colorIndicatorDot,
+                    { backgroundColor: slot.color || '#2F80ED' },
+                  ]}
+                />
+                <View style={styles.scheduleDetailCol}>
+                  <Text style={styles.scheduleSubject} numberOfLines={1} ellipsizeMode="tail">
+                    {slot.subject}
+                  </Text>
+                  <Text style={styles.scheduleRoom} numberOfLines={1} ellipsizeMode="tail">
+                    {slot.room}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* 4. ASSIGNMENTS DUE PREVIEW */}
+      <View style={styles.sectionWrapper}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Assignments Due</Text>
+          <TouchableOpacity
+            onPress={() => onNavigateTab('homework')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="View all assignments">
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => onNavigateTab('homework')}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={`${pendingHw.length} assignments pending`}
+          style={styles.homeworkBannerCard}>
+          <View style={styles.hwIconBox}>
+            <Ionicons name="document-text" size={22} color="#4F46E5" />
+          </View>
+          <View style={styles.hwTextCol}>
+            <Text style={styles.hwMainText} numberOfLines={1} ellipsizeMode="tail">
+              {pendingHw.length === 0
+                ? 'All assignments completed!'
+                : `${pendingHw.length} assignment${pendingHw.length === 1 ? '' : 's'} pending`}
+            </Text>
+            <Text style={styles.hwSubText} numberOfLines={1} ellipsizeMode="tail">
+              {pendingHw.length === 0
+                ? 'Great job! No pending tasks.'
+                : pendingHw.map((h) => h.subject).slice(0, 3).join(' • ')}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+        </TouchableOpacity>
+      </View>
+
+      {/* 5. SCHOOL UPDATES PREVIEW */}
+      <View style={styles.sectionWrapper}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>School Updates</Text>
+          <TouchableOpacity
+            onPress={() => onNavigateTab('updates')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="View all school updates">
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => onNavigateTab('updates')}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Annual Sports Day, 2 hours ago. Sports Day will be held on 28 Nov."
+          style={styles.updateCard}>
+          <View style={styles.updateIconBox}>
+            <Ionicons name="megaphone" size={22} color="#2F80ED" />
+          </View>
+          <View style={styles.updateTextCol}>
+            <View style={styles.updateTopRow}>
+              <Text style={styles.updateTitle} numberOfLines={1} ellipsizeMode="tail">
+                Annual Sports Day
+              </Text>
+              <Text style={styles.updateTimestamp}>2h ago</Text>
+            </View>
+            <Text style={styles.updateSummary} numberOfLines={2}>
+              Sports Day will be held on 28 Nov. All students are requested to participate.
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
+  </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Palette.background,
+    backgroundColor: '#F7F9FC',
   },
   contentContainer: {
-    padding: 16,
-    gap: 16,
     paddingBottom: 40,
-    maxWidth: 1200,
+  },
+  contentContainerTablet: {
+    maxWidth: 640,
     alignSelf: 'center',
     width: '100%',
   },
-  contentContainerDesktop: {
-    padding: 24,
+  appHeader: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingTop: Platform.OS === 'ios' ? 48 : 20,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
+    zIndex: 10,
   },
-  emergencyBanner: {
-    backgroundColor: Palette.errorRed,
-    borderRadius: Radii.card,
-    padding: 16,
-    gap: 8,
-  },
-  emergencyHeader: {
+  headerTop: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  emergencyTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radii.pill,
-    gap: 4,
-  },
-  emergencyTagText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  emergencyDate: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  emergencyTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  emergencyContent: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    lineHeight: 18,
-    opacity: 0.95,
-  },
-  mainLayout: {
-    gap: 16,
-  },
-  mainLayoutDesktop: {
-    flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  column: {
-    gap: 16,
-  },
-  columnHalf: {
-    flex: 1,
-  },
-  statusCard: {
-    gap: 14,
-  },
-  cardHeaderRow: {
+  headerTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
     gap: 6,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
   },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Palette.textSecondary,
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  headerTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4F46E5',
     letterSpacing: 0.8,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Palette.textDark,
-  },
-  attendanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    paddingVertical: 4,
-  },
-  progressCircleContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleGraphic: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    backgroundColor: Palette.navyTint,
-    borderWidth: 4,
-    borderColor: Palette.actionBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  percentageText: {
-    fontSize: 22,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '800',
-    color: Palette.primaryNavy,
+    color: '#0F172A',
   },
-  percentageLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Palette.textSecondary,
+  headerSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 2,
   },
-  metricsCol: {
-    flex: 1,
-    gap: 8,
-    minWidth: 120,
-  },
-  metricItem: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
   },
-  metricDot: {
+  chatBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  chatBadgeDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
-  metricLabel: {
-    fontSize: 13,
-    color: Palette.textSecondary,
+  notificationBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  profileBtn: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#EEF2FF',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  profileAvatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  statusOnlineDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  childCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  childAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1.5,
+    borderColor: '#EEF2FF',
+  },
+  childInfoCol: {
     flex: 1,
+    minWidth: 0,
+    marginHorizontal: 12,
   },
-  metricValue: {
-    fontSize: 14,
+  childName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  childGrade: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  activePill: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+  },
+  activePillText: {
+    fontSize: 10,
     fontWeight: '700',
-    color: Palette.textDark,
+    color: '#047857',
   },
-  cardFooterActions: {
+  switchChildBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: Palette.borderSubtle,
-    paddingTop: 12,
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  cardFooterLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  cardFooterLinkText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Palette.actionBlue,
-  },
-  leaveBtnLink: {
-    backgroundColor: Palette.background,
-    paddingHorizontal: 12,
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: Radii.sm,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: Palette.border,
+    borderColor: '#C7D2FE',
   },
-  quickActionsGrid: {
+  switchChildText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  centerSquareSection: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  squareHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  actionTile: {
-    flex: 1,
-    minWidth: 68,
-    backgroundColor: Palette.surface,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: Radii.md,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Palette.borderSubtle,
-    gap: 6,
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  actionIconBg: {
+  squareHeaderTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  squareHeaderSubtitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  squareGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  squareCard: {
+    width: '48%',
+    flexGrow: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    minHeight: 124,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  squareCardDesktop: {
+    width: '23%',
+  },
+  squareCardAcademics: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#2563EB',
+  },
+  squareCardAttendance: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#059669',
+  },
+  squareCardAssignments: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#D97706',
+  },
+  squareCardUpdates: {
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#DB2777',
+  },
+  squareTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  squareIconBox: {
     width: 42,
     height: 42,
-    borderRadius: 21,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionTileText: {
+  squareBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  squareBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: Palette.textDark,
-    textAlign: 'center',
+    fontWeight: '700',
   },
-  headerTextCol: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: 8,
+  squareBottomInfo: {
+    marginTop: 8,
   },
-  scheduleCard: {
-    gap: 14,
+  squareTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  squareSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  sectionWrapper: {
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
-    minWidth: 0,
+    marginBottom: 10,
+    minHeight: 32,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Palette.textDark,
-    lineHeight: 22,
+    color: '#17202A',
+    letterSpacing: -0.2,
   },
-  sectionSubtitle: {
-    fontSize: 12,
-    color: Palette.textSecondary,
-    marginTop: 2,
-  },
-  seeAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Palette.blueTint,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: Radii.pill,
-    flexShrink: 0,
-  },
-  seeAllText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Palette.actionBlue,
-  },
-  activeClassRow: {
-    backgroundColor: Palette.blueTint,
-    borderRadius: Radii.md,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: Palette.actionBlue,
-    gap: 6,
-  },
-  activePill: {
-    backgroundColor: Palette.actionBlue,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radii.xs,
-    alignSelf: 'flex-start',
-  },
-  activePillText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  nextClassRow: {
-    backgroundColor: Palette.background,
-    borderRadius: Radii.md,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Palette.borderSubtle,
-    gap: 6,
-  },
-  nextPill: {
-    backgroundColor: Palette.textSecondary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radii.xs,
-    alignSelf: 'flex-start',
-  },
-  nextPillText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  classInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  classSubjectCol: {
-    gap: 2,
-    flex: 1,
-    minWidth: 140,
-  },
-  classSubject: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Palette.textDark,
-  },
-  classTeacher: {
-    fontSize: 12,
-    color: Palette.textSecondary,
-  },
-  classMetaCol: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  classTime: {
+  viewAllText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Palette.primaryNavy,
-  },
-  classRoom: {
-    fontSize: 12,
-    color: Palette.textSecondary,
-    fontWeight: '500',
-  },
-  homeworkCard: {
-    gap: 14,
-  },
-  homeworkItem: {
-    backgroundColor: Palette.background,
-    borderRadius: Radii.md,
-    padding: 14,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: Palette.borderSubtle,
-  },
-  hwHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  hwSubjectTag: {
-    backgroundColor: Palette.navyTint,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radii.xs,
-  },
-  hwSubjectText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Palette.primaryNavy,
-  },
-  hwTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Palette.textDark,
-  },
-  hwDesc: {
-    fontSize: 13,
-    color: Palette.textSecondary,
-    lineHeight: 18,
-  },
-  hwFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: Palette.borderSubtle,
-    paddingTop: 8,
-    marginTop: 4,
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  hwTeacher: {
-    fontSize: 12,
-    color: Palette.textSecondary,
-  },
-  hwCompleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+    color: '#2F80ED',
     paddingVertical: 4,
-    borderRadius: Radii.sm,
-    backgroundColor: Palette.surface,
-    borderWidth: 1,
-    borderColor: Palette.border,
+    paddingHorizontal: 4,
   },
-  hwCompleteBtnActive: {
-    borderColor: Palette.successGreen,
-    backgroundColor: Palette.greenTint,
+  scheduleList: {
+    gap: 8,
   },
-  hwCompleteBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Palette.actionBlue,
-  },
-  announcementsCard: {
-    gap: 14,
-  },
-  announcementItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Palette.borderSubtle,
-    gap: 4,
-  },
-  annHeaderRow: {
+  scheduleCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    shadowColor: '#102A43',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#EDF2F7',
+    minHeight: 52,
   },
-  annDate: {
-    fontSize: 12,
-    color: Palette.textSecondary,
+  scheduleTime: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    width: 68,
   },
-  annTitle: {
+  colorIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  scheduleDetailCol: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  scheduleSubject: {
     fontSize: 14,
     fontWeight: '700',
-    color: Palette.textDark,
+    color: '#17202A',
   },
-  annContent: {
-    fontSize: 13,
-    color: Palette.textSecondary,
+  scheduleRoom: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  homeworkBannerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#102A43',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#EDF2F7',
+    minHeight: 56,
+  },
+  hwIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#FFF7ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  hwTextCol: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  hwMainText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#17202A',
+  },
+  hwSubText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  updateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    shadowColor: '#102A43',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#EDF2F7',
+  },
+  updateIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  updateTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  updateTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  updateTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#17202A',
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  updateTimestamp: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  updateSummary: {
+    fontSize: 12,
+    color: '#6B7280',
     lineHeight: 18,
   },
 });

@@ -9,19 +9,25 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { HeaderBar } from '@/components/common/HeaderBar';
 import { AppCard } from '@/components/common/AppCard';
 import { StatusPill } from '@/components/common/StatusPill';
 import { Palette, Radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { MOCK_COMMUNITY_POSTS } from '@/data/mockData';
 
-export const ParentUpdatesView: React.FC = () => {
+interface ParentUpdatesViewProps {
+  onBack?: () => void;
+}
+
+export const ParentUpdatesView: React.FC<ParentUpdatesViewProps> = ({ onBack }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
-  const { announcements } = useApp();
+  const { announcements, events, showAlert } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'announcements' | 'community'>('announcements');
+  const [activeTab, setActiveTab] = useState<'announcements' | 'events' | 'community'>('announcements');
   const [posts, setPosts] = useState(MOCK_COMMUNITY_POSTS);
+  const [rsvpedEvents, setRsvpedEvents] = useState<string[]>(['evt_01']);
 
   const handleLike = (id: string) => {
     setPosts((prev) =>
@@ -29,8 +35,33 @@ export const ParentUpdatesView: React.FC = () => {
     );
   };
 
+  const toggleRsvp = (eventId: string, title: string) => {
+    const isRsvped = rsvpedEvents.includes(eventId);
+    if (isRsvped) {
+      setRsvpedEvents((prev) => prev.filter((id) => id !== eventId));
+      showAlert({
+        title: 'RSVP Cancelled',
+        message: `Your attendance response for "${title}" has been withdrawn.`,
+        type: 'info',
+      });
+    } else {
+      setRsvpedEvents((prev) => [...prev, eventId]);
+      showAlert({
+        title: 'RSVP Confirmed! 🎉',
+        message: `You are registered to attend "${title}". A calendar reminder has been set for your family.`,
+        type: 'success',
+        icon: 'calendar-outline',
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
+      {/* Screen Header */}
+      <HeaderBar
+        title="School Updates & Events"
+        onBack={onBack}
+      />
       {/* Header Tabs */}
       <View style={styles.tabBar}>
         <View style={styles.tabInner}>
@@ -47,7 +78,24 @@ export const ParentUpdatesView: React.FC = () => {
                 styles.tabText,
                 activeTab === 'announcements' && styles.tabTextActive,
               ]}>
-              Official Circulars
+              Circulars
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setActiveTab('events')}
+            style={[styles.tabButton, activeTab === 'events' && styles.tabButtonActive]}>
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={activeTab === 'events' ? Palette.actionBlue : Palette.textSecondary}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'events' && styles.tabTextActive,
+              ]}>
+              School Events
             </Text>
           </TouchableOpacity>
 
@@ -64,7 +112,7 @@ export const ParentUpdatesView: React.FC = () => {
                 styles.tabText,
                 activeTab === 'community' && styles.tabTextActive,
               ]}>
-              Class Community
+              Community
             </Text>
           </TouchableOpacity>
         </View>
@@ -127,7 +175,99 @@ export const ParentUpdatesView: React.FC = () => {
           </View>
         )}
 
-        {/* TAB 2: CLASS COMMUNITY FEED */}
+        {/* TAB 2: SCHOOL EVENTS (Requirement 6) */}
+        {activeTab === 'events' && (
+          <View style={styles.listContainer}>
+            <View style={styles.sectionHeadingRow}>
+              <View>
+                <Text style={styles.sectionTitle}>School Activities & Calendar</Text>
+                <Text style={{ fontSize: 12, color: Palette.textSecondary, marginTop: 2 }}>
+                  Upcoming events, workshops & parent-teacher meetings
+                </Text>
+              </View>
+              <Text style={styles.countTag}>{events.length} Scheduled</Text>
+            </View>
+
+            <View style={[styles.annGrid, isDesktop && styles.annGridDesktop]}>
+              {events.map((ev) => {
+                const isRsvped = rsvpedEvents.includes(ev.id);
+                return (
+                  <AppCard
+                    key={ev.id}
+                    style={[styles.annCard, isDesktop && styles.annCardDesktop]}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.priorityRow}>
+                        <View style={styles.categoryPillTag}>
+                          <Ionicons
+                            name={
+                              ev.category === 'sports'
+                                ? 'football'
+                                : ev.category === 'ptm'
+                                ? 'people'
+                                : ev.category === 'workshop'
+                                ? 'bulb'
+                                : 'calendar'
+                            }
+                            size={12}
+                            color="#4F46E5"
+                          />
+                          <Text style={styles.categoryPillTagText}>
+                            {ev.category.toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.eventRsvpCountPill}>
+                        <Ionicons name="people" size={11} color="#059669" />
+                        <Text style={styles.eventRsvpCountText}>
+                          {(ev.rsvpCount || 36) + (isRsvped ? 1 : 0)} Attending
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.annTitle}>{ev.title}</Text>
+                    <Text style={styles.annContent}>{ev.description}</Text>
+
+                    <View style={styles.eventDetailsBox}>
+                      <View style={styles.eventDetailRow}>
+                        <Ionicons name="calendar-outline" size={13} color="#4F46E5" />
+                        <Text style={styles.eventDetailText}>
+                          {ev.date} • {ev.time}
+                        </Text>
+                      </View>
+                      <View style={styles.eventDetailRow}>
+                        <Ionicons name="location-outline" size={13} color="#4F46E5" />
+                        <Text style={styles.eventDetailText}>{ev.venue}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.authorText}>Organized by: {ev.organizer}</Text>
+                      <TouchableOpacity
+                        style={[styles.rsvpButton, isRsvped && styles.rsvpButtonActive]}
+                        activeOpacity={0.8}
+                        onPress={() => toggleRsvp(ev.id, ev.title)}>
+                        <Ionicons
+                          name={isRsvped ? 'checkmark-circle' : 'calendar'}
+                          size={13}
+                          color={isRsvped ? '#FFFFFF' : '#4F46E5'}
+                        />
+                        <Text
+                          style={[
+                            styles.rsvpButtonText,
+                            isRsvped && styles.rsvpButtonTextActive,
+                          ]}>
+                          {isRsvped ? 'Attending ✓' : 'RSVP to Attend'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </AppCard>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* TAB 3: CLASS COMMUNITY FEED */}
         {activeTab === 'community' && (
           <View style={styles.listContainer}>
             {/* Controlled community guidelines banner */}
@@ -185,9 +325,8 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.background,
   },
   tabBar: {
-    backgroundColor: Palette.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Palette.borderSubtle,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 0,
   },
   tabInner: {
     flexDirection: 'row',
@@ -403,5 +542,76 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: Palette.textSecondary,
+  },
+  categoryPillTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radii.pill,
+  },
+  categoryPillTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#4F46E5',
+    letterSpacing: 0.5,
+  },
+  eventRsvpCountPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radii.pill,
+  },
+  eventRsvpCountText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  eventDetailsBox: {
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: Radii.md,
+    gap: 6,
+    marginVertical: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  eventDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  eventDetailText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Palette.textDark,
+  },
+  rsvpButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radii.pill,
+    borderWidth: 1.5,
+    borderColor: '#4F46E5',
+    backgroundColor: '#EEF2FF',
+  },
+  rsvpButtonActive: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  rsvpButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  rsvpButtonTextActive: {
+    color: '#FFFFFF',
   },
 });

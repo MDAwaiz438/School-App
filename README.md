@@ -1,89 +1,56 @@
-# 🏫 School Ecosystem App (React Native & Expo 58)
+# Welcome to your Expo app 👋
 
-A comprehensive, production-ready Multi-Role Educational Management Platform built with React Native (Expo SDK 58), React 19, TypeScript, Reanimated 4, and Expo Router.
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
----
+## Get started
 
-## 📱 App Highlights
+1. Install dependencies
 
-- **4 Integrated Portals in One App**:
-  - 👨‍👩‍👧 **Parent Portal**: Attendance analytics (94% presence gauge), daily timetable with real-time class status, leave application system, bus tracking, school fee payments, exam report cards, and notices.
-  - 🎒 **Student Portal**: Daily class schedule, homework assignments with submission tracker, test scores, digital student ID card, and extracurricular activities.
-  - 👩‍🏫 **Teacher Portal**: Instant class roll-call attendance, gradebook entries, timetable view, and broadcast announcements.
-  - 🏛️ **School Admin Portal**: Institution-wide metrics, fee collection summaries, teacher performance, and announcement dispatch.
-- **Flawless Edge-to-Edge Mobile UI**:
-  - Dynamically calculates status bar height (`insets.top`) and gesture/navigation bar height (`insets.bottom`) using `react-native-safe-area-context`.
-  - Zero collision with camera cutouts or Android hardware/software navigation keys.
-- **Offline Standalone Native APK**:
-  - Pre-bundled Hermes JS engine + offline assets.
-  - Native C++ bindings for Reanimated 4, Gesture Handler, and Screens compiled with Android NDK 27.
-
----
-
-## 📥 Direct APK Download & Installation
-
-The compiled standalone release APK is located directly in this repository:
-
-👉 **[Download APK: `release/School-App-v1.0.0.apk`](./release/School-App-v1.0.0.apk)** *(~34.5 MB)*
-
-### How to Install on Android:
-1. **Via Phone Browser**:
-   - Download `School-App-v1.0.0.apk` directly onto your Android device.
-   - Tap the downloaded file in your Notification Center or Downloads folder.
-   - If prompted, allow *"Install unknown apps"* for your browser/file manager.
-   - Tap **Install** and open the app.
-2. **Via ADB (USB Debugging)**:
    ```bash
-   adb install -r -d release/School-App-v1.0.0.apk
-   adb shell am start -n com.anonymous.schoolapp/.MainActivity
+   npm install
    ```
 
----
+2. Start the app
 
-## 🛠️ Tech Stack & Architecture
+   ```bash
+   npx expo start
+   ```
 
-- **Framework**: [Expo SDK 58](https://expo.dev) + [React Native 0.88](https://reactnative.dev)
-- **UI & Gestures**: `react-native-reanimated`, `react-native-gesture-handler`, `react-native-screens`, `react-native-safe-area-context`
-- **Routing**: `expo-router` (File-based routing)
-- **Icons & Styling**: `@expo/vector-icons` (Ionicons), custom design token system
-- **State Management**: React Context (`AppContext`) with multi-role state simulation
+In the output, you'll find options to open the app in a
 
----
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-## 🚀 Development & Building from Source
+You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-### Prerequisites
-- Node.js 18+ & npm
-- (Optional for native Android builds) Android SDK (API 35, Build-Tools 35.0.0, NDK 27.0.12077973)
+## Get a fresh project
 
-### Installation
+When you're ready, run:
+
 ```bash
-# Clone the repository
-git clone https://github.com/MDAwaiz438/School-App.git
-cd School-App
-
-# Install dependencies
-npm install
+npm run reset-project
 ```
 
-### Running Locally
+This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
 
-#### 1. Interactive Development Mode (Web / Expo Go)
-```bash
-npx expo start
-```
-- Press `w` to open in browser.
-- Press `a` to run on a connected Android phone or emulator.
+### Other setup steps
 
-#### 2. Building Standalone Android Release APK
-```bash
-cd android
-./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
-```
-The output APK will be generated at:
-`android/app/build/outputs/apk/release/app-release.apk`
+- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
+- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
+- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
----
+## Learn more
 
-## 📄 License
-MIT License. Built with ❤️ for educational excellence.
+To learn more about developing your project with Expo, look at the following resources:
+
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+
+## Join the community
+
+Join our community of developers creating universal apps.
+
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

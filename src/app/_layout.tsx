@@ -14,7 +14,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AppProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: '#FFFFFF' },
+          }}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
         </Stack>
       </AppProvider>

@@ -106,8 +106,8 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#0B1B2B',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#1A334E',
   },
@@ -137,15 +137,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   roleTab: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     borderRadius: Radii.sm,
     backgroundColor: 'transparent',
     flex: 1,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.actionBlue,
   },
   roleText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#A0B2C6',
   },

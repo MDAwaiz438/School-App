@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { HeaderBar } from '@/components/common/HeaderBar';
 import { AppCard } from '@/components/common/AppCard';
 import { AppButton } from '@/components/common/AppButton';
 import { StatusPill } from '@/components/common/StatusPill';
@@ -19,87 +19,174 @@ import { useApp } from '@/context/AppContext';
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const;
 type DayType = typeof DAYS[number];
 
-export const ParentAcademicsView: React.FC = () => {
+interface ParentAcademicsViewProps {
+  onNavigateTab?: (tab: 'home' | 'academics' | 'updates' | 'more' | 'attendance' | 'homework') => void;
+  onBack?: () => void;
+}
+
+export const ParentAcademicsView: React.FC<ParentAcademicsViewProps> = ({ onNavigateTab, onBack }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
-  const { selectedStudent } = useApp();
+  const { selectedStudent, homeworkList, toggleHomeworkStatus, showAlert } = useApp();
 
-  const [activeSubTab, setActiveSubTab] = useState<'timetable' | 'report_card' | 'achievements'>('timetable');
+  const [activeSubTab, setActiveSubTab] = useState<'hub' | 'timetable' | 'assignments' | 'report_card' | 'achievements'>('hub');
   const [selectedDay, setSelectedDay] = useState<DayType>('Monday');
   const [selectedTerm, setSelectedTerm] = useState<'Mid-Term' | 'Term 1' | 'Annual'>('Mid-Term');
 
   const handleDownloadReport = () => {
-    Alert.alert(
-      'Report Card Download',
-      `Downloading official certified Report Card for ${selectedStudent.name} (${selectedTerm}).`,
-      [{ text: 'OK' }]
-    );
+    showAlert({
+      title: 'Report Card Download',
+      message: `Downloading official certified Report Card for ${selectedStudent.name} (${selectedTerm}).`,
+      type: 'success',
+      icon: 'download-outline',
+    });
   };
+
+  const handleBack = onBack || (onNavigateTab ? () => onNavigateTab('home') : undefined);
 
   return (
     <View style={styles.container}>
-      {/* Sub Tabs */}
-      <View style={styles.subTabBar}>
-        <View style={styles.subTabInner}>
-          <TouchableOpacity
-            onPress={() => setActiveSubTab('timetable')}
-            style={[styles.subTab, activeSubTab === 'timetable' && styles.subTabActive]}>
-            <Ionicons
-              name="calendar-outline"
-              size={15}
-              color={activeSubTab === 'timetable' ? Palette.actionBlue : Palette.textSecondary}
-            />
-            <Text
-              style={[
-                styles.subTabText,
-                activeSubTab === 'timetable' && styles.subTabTextActive,
-              ]}
-              numberOfLines={1}>
-              Timetable
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setActiveSubTab('report_card')}
-            style={[styles.subTab, activeSubTab === 'report_card' && styles.subTabActive]}>
-            <Ionicons
-              name="document-text-outline"
-              size={15}
-              color={activeSubTab === 'report_card' ? Palette.actionBlue : Palette.textSecondary}
-            />
-            <Text
-              style={[
-                styles.subTabText,
-                activeSubTab === 'report_card' && styles.subTabTextActive,
-              ]}
-              numberOfLines={1}>
-              {width < 360 ? 'Reports' : 'Report Card'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setActiveSubTab('achievements')}
-            style={[styles.subTab, activeSubTab === 'achievements' && styles.subTabActive]}>
-            <Ionicons
-              name="trophy-outline"
-              size={15}
-              color={activeSubTab === 'achievements' ? Palette.actionBlue : Palette.textSecondary}
-            />
-            <Text
-              style={[
-                styles.subTabText,
-                activeSubTab === 'achievements' && styles.subTabTextActive,
-              ]}
-              numberOfLines={1}>
-              Achievements
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Screen Header */}
+      <HeaderBar
+        title={
+          activeSubTab === 'hub'
+            ? 'Academic Hub'
+            : activeSubTab === 'timetable'
+            ? 'Class Timetable'
+            : activeSubTab === 'assignments'
+            ? 'Assignments'
+            : activeSubTab === 'report_card'
+            ? 'Report Card'
+            : 'Achievements'
+        }
+        onBack={activeSubTab === 'hub' ? undefined : () => setActiveSubTab('hub')}
+      />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, isDesktop && styles.scrollContentDesktop]}
         showsVerticalScrollIndicator={false}>
+        {/* SUBTAB 0: ACADEMIC HUB */}
+        {activeSubTab === 'hub' && (
+          <View style={styles.tabContent}>
+            {/* Student Academic Standing Banner */}
+            <AppCard style={styles.academicHeroCard}>
+              <View style={styles.academicHeroRow}>
+                <View style={styles.academicHeroTextCol}>
+                  <Text style={styles.academicHeroTag}>ENROLLED STUDENT</Text>
+                  <Text style={styles.academicHeroName}>{selectedStudent.name}</Text>
+                  <Text style={styles.academicHeroSub}>Grade 8 - Section A • Roll #{selectedStudent.rollNo}</Text>
+                </View>
+                <View style={styles.standingBadge}>
+                  <Text style={styles.standingGrade}>A+</Text>
+                  <Text style={styles.standingLabel}>Standing</Text>
+                </View>
+              </View>
+            </AppCard>
+
+            {/* CENTER SQUARE SECTION HUBS */}
+            <View style={styles.centerSquareSection}>
+              <View style={styles.squareHeaderRow}>
+                <Text style={styles.squareHeaderTitle}>Academic Portals</Text>
+                <Text style={styles.squareHeaderSubtitle}>Direct Navigation</Text>
+              </View>
+
+              <View style={styles.squareGrid}>
+                {/* Square 1: Timetable */}
+                <TouchableOpacity
+                  style={[styles.squareCard, styles.squareCardTimetable]}
+                  activeOpacity={0.75}
+                  onPress={() => setActiveSubTab('timetable')}>
+                  <View style={styles.squareTopRow}>
+                    <View style={[styles.squareIconBox, { backgroundColor: '#EEF2FF' }]}>
+                      <Ionicons name="calendar" size={24} color="#4F46E5" />
+                    </View>
+                    <View style={[styles.squareBadge, { backgroundColor: '#E0E7FF' }]}>
+                      <Text style={[styles.squareBadgeText, { color: '#4338CA' }]}>
+                        Schedule
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.squareBottomInfo}>
+                    <Text style={styles.squareTitle}>Timetable</Text>
+                    <Text style={styles.squareSubtitle} numberOfLines={1}>
+                      Daily periods & classes
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Square 2: Assignments */}
+                <TouchableOpacity
+                  style={[styles.squareCard, styles.squareCardAssignments]}
+                  activeOpacity={0.75}
+                  onPress={() => setActiveSubTab('assignments')}>
+                  <View style={styles.squareTopRow}>
+                    <View style={[styles.squareIconBox, { backgroundColor: '#ECFDF5' }]}>
+                      <Ionicons name="book" size={24} color="#059669" />
+                    </View>
+                    <View style={[styles.squareBadge, { backgroundColor: '#D1FAE5' }]}>
+                      <Text style={[styles.squareBadgeText, { color: '#047857' }]}>
+                        {homeworkList.length} Tasks
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.squareBottomInfo}>
+                    <Text style={styles.squareTitle}>Assignments</Text>
+                    <Text style={styles.squareSubtitle} numberOfLines={1}>
+                      Homework & submissions
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Square 3: Report Card */}
+                <TouchableOpacity
+                  style={[styles.squareCard, styles.squareCardReports]}
+                  activeOpacity={0.75}
+                  onPress={() => setActiveSubTab('report_card')}>
+                  <View style={styles.squareTopRow}>
+                    <View style={[styles.squareIconBox, { backgroundColor: '#FAF5FF' }]}>
+                      <Ionicons name="document-text" size={24} color="#9333EA" />
+                    </View>
+                    <View style={[styles.squareBadge, { backgroundColor: '#F3E8FF' }]}>
+                      <Text style={[styles.squareBadgeText, { color: '#7E22CE' }]}>
+                        {MOCK_REPORT_CARD.percentage}%
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.squareBottomInfo}>
+                    <Text style={styles.squareTitle}>Report Card</Text>
+                    <Text style={styles.squareSubtitle} numberOfLines={1}>
+                      Term marks & remarks
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Square 4: Achievements */}
+                <TouchableOpacity
+                  style={[styles.squareCard, styles.squareCardAwards]}
+                  activeOpacity={0.75}
+                  onPress={() => setActiveSubTab('achievements')}>
+                  <View style={styles.squareTopRow}>
+                    <View style={[styles.squareIconBox, { backgroundColor: '#FFFBEB' }]}>
+                      <Ionicons name="trophy" size={24} color="#D97706" />
+                    </View>
+                    <View style={[styles.squareBadge, { backgroundColor: '#FEF3C7' }]}>
+                      <Text style={[styles.squareBadgeText, { color: '#B45309' }]}>
+                        Honors
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.squareBottomInfo}>
+                    <Text style={styles.squareTitle}>Awards</Text>
+                    <Text style={styles.squareSubtitle} numberOfLines={1}>
+                      Certificates & badges
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* SUBTAB 1: TIMETABLE */}
         {activeSubTab === 'timetable' && (
           <View style={styles.tabContent}>
@@ -274,6 +361,70 @@ export const ParentAcademicsView: React.FC = () => {
           </View>
         )}
 
+        {/* SUBTAB: ASSIGNMENTS & HOMEWORK MONITOR */}
+        {activeSubTab === 'assignments' && (
+          <View style={styles.tabContent}>
+            <View style={styles.dayInfoRow}>
+              <View>
+                <Text style={styles.dayInfoTitle}>Child Coursework & Tasks</Text>
+                <Text style={styles.dayInfoSubtitle}>
+                  {homeworkList.filter((h) => h.status === 'completed').length} of {homeworkList.length} assignments turned in
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.viewHubBtn}
+                activeOpacity={0.8}
+                onPress={() => onNavigateTab?.('homework')}>
+                <Text style={styles.viewHubBtnText}>Full Hub</Text>
+                <Ionicons name="arrow-forward" size={13} color="#4F46E5" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.assignmentsListStack}>
+              {homeworkList.map((hw) => {
+                const isCompleted = hw.status === 'completed';
+                return (
+                  <AppCard key={hw.id} style={styles.academicHwCard}>
+                    <View style={styles.academicHwTop}>
+                      <View style={styles.hwSubjectPill}>
+                        <Text style={styles.hwSubjectPillText}>{hw.subject}</Text>
+                      </View>
+                      <Text style={styles.hwDueCountdown}>Due: {hw.dueDate}</Text>
+                    </View>
+
+                    <Text style={styles.academicHwTitle}>{hw.title}</Text>
+                    <Text style={styles.academicHwDesc}>{hw.description}</Text>
+
+                    <View style={styles.academicHwFooter}>
+                      <Text style={styles.academicHwTeacher}>Assigned by {hw.teacherName}</Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.parentVerifyBtn,
+                          isCompleted && styles.parentVerifyBtnDone,
+                        ]}
+                        activeOpacity={0.8}
+                        onPress={() => toggleHomeworkStatus(hw.id)}>
+                        <Ionicons
+                          name={isCompleted ? 'checkmark-circle' : 'time-outline'}
+                          size={14}
+                          color={isCompleted ? '#059669' : '#D97706'}
+                        />
+                        <Text
+                          style={[
+                            styles.parentVerifyBtnText,
+                            isCompleted && styles.parentVerifyBtnTextDone,
+                          ]}>
+                          {isCompleted ? 'Turned In' : 'Pending Turn-in'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </AppCard>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* SUBTAB 3: ACHIEVEMENTS */}
         {activeSubTab === 'achievements' && (
           <View style={styles.tabContent}>
@@ -313,7 +464,12 @@ export const ParentAcademicsView: React.FC = () => {
                     <TouchableOpacity
                       style={styles.certLink}
                       onPress={() =>
-                        Alert.alert('Certificate Preview', `Viewing digital certificate for ${ach.title}.`)
+                        showAlert({
+                          title: 'Certificate Preview',
+                          message: `Viewing digital certificate for ${ach.title}. Issued on ${ach.date}.`,
+                          type: 'info',
+                          icon: 'trophy-outline',
+                        })
                       }>
                       <Ionicons name="eye-outline" size={14} color={Palette.actionBlue} />
                       <Text style={styles.certLinkText}>View Certificate</Text>
@@ -334,43 +490,144 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Palette.background,
   },
-  subTabBar: {
-    backgroundColor: Palette.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Palette.borderSubtle,
+  academicHeroCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  subTabInner: {
+  academicHeroRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    maxWidth: 1200,
-    alignSelf: 'center',
-    width: '100%',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 4,
   },
-  subTab: {
+  academicHeroTextCol: {
     flex: 1,
-    flexDirection: 'row',
+  },
+  academicHeroTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4F46E5',
+    letterSpacing: 0.6,
+    marginBottom: 4,
+  },
+  academicHeroName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  academicHeroSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  standingBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 7,
-    paddingHorizontal: 4,
-    borderRadius: Radii.sm,
-    gap: 4,
-    minWidth: 0,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
   },
-  subTabActive: {
-    backgroundColor: Palette.blueTint,
+  standingGrade: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#4F46E5',
   },
-  subTabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Palette.textSecondary,
-  },
-  subTabTextActive: {
-    color: Palette.actionBlue,
+  standingLabel: {
+    fontSize: 10,
     fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  centerSquareSection: {
+    marginVertical: 4,
+  },
+  squareHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  squareHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  squareHeaderSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  squareGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  squareCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.5,
+    minHeight: 126,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  squareCardTimetable: {
+    borderColor: '#C7D2FE',
+  },
+  squareCardAssignments: {
+    borderColor: '#BBF7D0',
+  },
+  squareCardReports: {
+    borderColor: '#E9D5FF',
+  },
+  squareCardAwards: {
+    borderColor: '#FDE68A',
+  },
+  squareTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  squareIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  squareBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  squareBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  squareBottomInfo: {
+    marginTop: 8,
+  },
+  squareTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  squareSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 2,
   },
   scrollContent: {
     padding: 16,
@@ -773,5 +1030,95 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: Palette.actionBlue,
+  },
+
+  // Academic Assignment SubTab Styles
+  viewHubBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  viewHubBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  assignmentsListStack: {
+    gap: 12,
+    marginTop: 8,
+  },
+  academicHwCard: {
+    padding: 16,
+    gap: 8,
+  },
+  academicHwTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  hwSubjectPill: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  hwSubjectPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#4F46E5',
+    textTransform: 'uppercase',
+  },
+  hwDueCountdown: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  academicHwTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Palette.textDark,
+  },
+  academicHwDesc: {
+    fontSize: 13,
+    color: Palette.textSecondary,
+    lineHeight: 18,
+  },
+  academicHwFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: Palette.borderSubtle,
+    paddingTop: 10,
+    marginTop: 4,
+  },
+  academicHwTeacher: {
+    fontSize: 11,
+    color: Palette.textSecondary,
+    fontWeight: '500',
+  },
+  parentVerifyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  parentVerifyBtnDone: {
+    backgroundColor: '#ECFDF5',
+  },
+  parentVerifyBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  parentVerifyBtnTextDone: {
+    color: '#059669',
   },
 });
